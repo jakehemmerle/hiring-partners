@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "mcp-agent-mail": {
+      "command": "/Users/jake/.local/bin/mcp-agent-mail",
+      "args": [],
+      "env": {
+        "HTTP_BEARER_TOKEN": "b99ef3edebbf6cfe1f4c1a425af22b83602b87fa007c7e14cac75e286cbc08b9"
+      }
+    }
+  },
+  "servers": {
+    "mcp-agent-mail": {
+      "type": "http",
+      "url": "http://127.0.0.1:8765/api/",
+      "headers": {
+        "Authorization": "Bearer 1216636c3147febed98ea9245bf1c8f6abdb0d6574966f27c009641c54361888"
+      }
+    }
+  }
+}

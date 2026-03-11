@@ -1,0 +1,9 @@
+.env
+.claude/settings.local.json
+.claude/settings.local.json.bkp
+.DS_Store
+.fastembed_cache/
+storage.sqlite3*
+apex-fintech-services/
+future_projects/
+superbuilders/

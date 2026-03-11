@@ -1,0 +1,3 @@
+[submodule "peaksix"]
+	path = peaksix
+	url = git@github.com:jakehemmerle/meridian.git
