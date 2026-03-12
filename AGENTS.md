@@ -24,44 +24,6 @@ We do not care about backwards compatibility—we're in early development with n
 
 ---
 
-## MCP Agent Mail: coordination for multi-agent workflows
-
-What it is
-
-- A mail-like layer that lets coding agents coordinate asynchronously via MCP tools and resources.
-- Provides identities, inbox/outbox, searchable threads, and advisory file reservations,
-  with human-auditable artifacts in Git.
-
-Why it's useful
-
-- Prevents agents from stepping on each other with explicit file reservations (leases).
-- Keeps communication out of your token budget by storing messages in a per-project archive.
-- Offers quick reads (resource://inbox/..., resource://thread/...) and macros that bundle common flows.
-
-How to use effectively
-
-1) Register an identity: call ensure_project, then register_agent using this repo's
-   absolute path as project_key.
-2) Reserve files before you edit: file_reservation_paths(project_key, agent_name,
-   ["src/**"], ttl_seconds=3600, exclusive=true)
-3) Communicate with threads: use send_message(..., thread_id="FEAT-123"); check inbox
-   with fetch_inbox and acknowledge with acknowledge_message.
-4) Quick reads: resource://inbox/{Agent}?project=<abs-path>&limit=20
-
-Macros vs granular tools
-
-- Prefer macros for speed: macro_start_session, macro_prepare_thread,
-  macro_file_reservation_cycle, macro_contact_handshake.
-- Use granular tools for control: register_agent, file_reservation_paths, send_message,
-  fetch_inbox, acknowledge_message.
-
-Common pitfalls
-
-- "from_agent not registered": always register_agent in the correct project_key first.
-- "FILE_RESERVATION_CONFLICT": adjust patterns, wait for expiry, or use non-exclusive.
-
----
-
 ## Code Editing Discipline
 
 ### No Script-Based Changes
@@ -92,114 +54,17 @@ If you aren't 100% sure how to use a third-party library, **SEARCH ONLINE** to f
 
 ---
 
-## MCP Agent Mail — Multi-Agent Coordination
-
-A mail-like layer that lets coding agents coordinate asynchronously via MCP tools and resources. Provides identities, inbox/outbox, searchable threads, and advisory file reservations with human-auditable artifacts in Git.
-
-### Why It's Useful
-
-- **Prevents conflicts:** Explicit file reservations (leases) for files/globs
-- **Token-efficient:** Messages stored in per-project archive, not in context
-- **Quick reads:** `resource://inbox/...`, `resource://thread/...`
-
-### Same Repository Workflow
-
-1. **Register identity:**
-
-   ```
-   ensure_project(project_key=<abs-path>)
-   register_agent(project_key, program, model)
-   ```
-
-2. **Reserve files before editing:**
-
-   ```
-   file_reservation_paths(project_key, agent_name, ["src/**"], ttl_seconds=3600, exclusive=true)
-   ```
-
-3. **Communicate with threads:**
-
-   ```
-   send_message(..., thread_id="FEAT-123")
-   fetch_inbox(project_key, agent_name)
-   acknowledge_message(project_key, agent_name, message_id)
-   ```
-
-4. **Quick reads:**
-
-   ```
-   resource://inbox/{Agent}?project=<abs-path>&limit=20
-   resource://thread/{id}?project=<abs-path>&include_bodies=true
-   ```
-
-### Macros vs Granular Tools
-
-- **Prefer macros for speed:** `macro_start_session`, `macro_prepare_thread`, `macro_file_reservation_cycle`, `macro_contact_handshake`
-- **Use granular tools for control:** `register_agent`, `file_reservation_paths`, `send_message`, `fetch_inbox`, `acknowledge_message`
-
-### Common Pitfalls
-
-- `"from_agent not registered"`: Always `register_agent` in the correct `project_key` first
-- `"FILE_RESERVATION_CONFLICT"`: Adjust patterns, wait for expiry, or use non-exclusive reservation
-- **Auth errors:** If JWT+JWKS enabled, include bearer token with matching `kid`
-
----
 
 ## Beads (br) — Dependency-Aware Issue Tracking
 
-Beads provides a lightweight, dependency-aware issue database and CLI (`br` - beads_rust) for selecting "ready work," setting priorities, and tracking status. It complements MCP Agent Mail's messaging and file reservations.
+Beads provides a lightweight, dependency-aware issue database and CLI (`br` - beads_rust) for selecting "ready work," setting priorities, and tracking status.
 
 **Important:** `br` is non-invasive—it NEVER runs git commands automatically. You must manually commit changes after `br sync --flush-only`.
 
 ### Conventions
 
-- **Single source of truth:** Beads for task status/priority/dependencies; Agent Mail for conversation and audit
-- **Shared identifiers:** Use Beads issue ID (e.g., `br-123`) as Mail `thread_id` and prefix subjects with `[br-123]`
-- **Reservations:** When starting a task, call `file_reservation_paths()` with the issue ID in `reason`
-
-### Typical Agent Flow
-
-1. **Pick ready work (Beads):**
-
-   ```bash
-   br ready --json  # Choose highest priority, no blockers
-   ```
-
-2. **Reserve edit surface (Mail):**
-
-   ```
-   file_reservation_paths(project_key, agent_name, ["src/**"], ttl_seconds=3600, exclusive=true, reason="br-123")
-   ```
-
-3. **Announce start (Mail):**
-
-   ```
-   send_message(..., thread_id="br-123", subject="[br-123] Start: <title>", ack_required=true)
-   ```
-
-4. **Work and update:** Reply in-thread with progress
-
-5. **Complete and release:**
-
-   ```bash
-   br close 123 --reason "Completed"
-   br sync --flush-only  # Export to JSONL (no git operations)
-   ```
-
-   ```
-   release_file_reservations(project_key, agent_name, paths=["src/**"])
-   ```
-
-   Final Mail reply: `[br-123] Completed` with summary
-
-### Mapping Cheat Sheet
-
-| Concept | Value |
-|---------|-------|
-| Mail `thread_id` | `br-###` |
-| Mail subject | `[br-###] ...` |
-| File reservation `reason` | `br-###` |
-| Commit messages | Include `br-###` for traceability |
+- **Single source of truth:** Beads for task status/priority/dependencies
+- **Commit traceability:** Include `br-###` in commit messages
 
 ---
 
@@ -207,7 +72,7 @@ Beads provides a lightweight, dependency-aware issue database and CLI (`br` - be
 
 bv is a graph-aware triage engine for Beads projects (`.beads/beads.jsonl`). It computes PageRank, betweenness, critical path, cycles, HITS, eigenvector, and k-core metrics deterministically.
 
-**Scope boundary:** bv handles *what to work on* (triage, priority, planning). For agent-to-agent coordination (messaging, work claiming, file reservations), use MCP Agent Mail.
+**Scope boundary:** bv handles *what to work on* (triage, priority, planning).
 
 **CRITICAL: Use non-interactive flags (`--robot-*`, `--recipe`, `--as-of`, `--diff-since`, `--export-md`) only. Bare `bv` launches an interactive TUI that blocks your session.**
 
